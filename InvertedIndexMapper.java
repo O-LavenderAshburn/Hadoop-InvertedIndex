@@ -44,8 +44,7 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text  
      * Reads in stop words so we can skip over them
      */
     public void readStopWords(){
-           String filepath  = "/home/oa57/Desktop/COMPX553/assignment-six-hadoop-inverted-2024/src/invertedindex/stop_words.txt";
-
+        String filepath  = "/home/oa57/Desktop/COMPX553/assignment-six-hadoop-inverted-2024/src/invertedindex/stop_words.txt";
             try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
                 String line;
                 // Read the file line by line
@@ -70,8 +69,8 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text  
     /**
      *
      * @param key
-     * @param value
-     * @param context
+     * @param value Document to read
+     * @param context context
      * @throws IOException
      * @throws InterruptedException
      */
@@ -79,6 +78,8 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text  
                 throws IOException, InterruptedException {
             //get values
             String text = value.toString();
+
+
             //split the text in to lines
             String[] lines = text.split("\n");
 
@@ -91,10 +92,18 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text  
                 String[] words = line.split(" ");
                 for (int i = 0; i < words.length; i++) {
                     if(stopwords.contains(words[i])){
+                        context.getCounter(Counters.STOP_WORDS).increment(1);
                         continue;
                     }
                     //get the current word
                     word.set(words[i]);
+                    context.getCounter(Counters.TOTAL_CHARACTERS).increment(word.getLength());
+                    context.getCounter(Counters.WORD_COUNT).increment(1);
+                    if (words[i].startsWith("A") || words[i].startsWith("a")) {
+                        context.getCounter(Counters.A_WORDS).increment(1);
+                    } else if (words[i].startsWith("Z") || words[i].startsWith("z")) {
+                        context.getCounter(Counters.Z_WORDS).increment(1);
+                    }
                     //set token to contain count,doc id, line number and sentence position
                     doc_info.set("1"+"\t"+ id + "\t" + line_num + "\t" + i);
                     //write the word as the key and the
@@ -103,7 +112,7 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text  
                 //reset line number
                 line_num.set(line_num.get() + 1);
             }
-            line_num.set(0);
+            line_num.set(1);
         }
 
 }
